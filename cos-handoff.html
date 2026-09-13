@@ -4,11 +4,143 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Archbot — CoS → Design handoff</title>
-<!-- full body loaded via follow-up if this size works -->
-<style>body{font-family:system-ui;background:#0c0d10;color:#e8eaef;padding:24px}a{color:#7c9cff}</style>
+<link rel="stylesheet" href="cos-handoff.css" />
 </head>
 <body>
-<h1>Archbot — CoS → Design handoff</h1>
-<p>Prototype upload in progress — replacing with full clickable HTML next.</p>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">ARCH<span>BOT</span></div>
+    <button class="nav-item active" id="nav-cos" onclick="goCoS()">
+      <span class="dot" id="dot-cos"></span> Chief of Staff
+    </button>
+    <button class="nav-item" id="nav-design" onclick="openDesignFromNav()">
+      <span class="dot dim" id="dot-design"></span> Design
+    </button>
+    <div style="flex:1"></div>
+    <div class="hint">Prototype · CoS routes work; Design does visual craft. CoS never generates images.</div>
+  </aside>
+
+  <section class="main">
+    <div class="topbar">
+      <div class="crumb" id="crumb"><strong>Chief of Staff</strong> · chat</div>
+      <span class="badge">Prototype</span>
+    </div>
+    <div class="eval-bar">
+      <strong>Evaluate:</strong>
+      Handoff card confirmable vs auto-open ·
+      Packet fields too much / too little ·
+      Chat-primary CoS + pulse strip vs old pulse-hero home
+    </div>
+
+    <div class="content">
+      <!-- ========== CoS ========== -->
+      <div class="screen active" id="screen-cos">
+        <div class="pulse-strip">
+          <div class="pulse-card">
+            <div>
+              <h3>Riverside Lobby</h3>
+              <p>Architecture · SD · last worked</p>
+              <div class="pulse-meta">
+                <span class="chip">SD</span>
+                <span class="chip" id="lobby-run-chip">Idle</span>
+              </div>
+            </div>
+            <button class="btn small" onclick="continueLobby()">Continue</button>
+          </div>
+          <div class="pulse-card secondary">
+            <div>
+              <h3>Riverside Kitchen</h3>
+              <p>Interior · Schematic</p>
+              <div class="pulse-meta">
+                <span class="chip">Schematic</span>
+              </div>
+            </div>
+            <button class="btn secondary small" onclick="openKitchenInDesign()">Open</button>
+          </div>
+        </div>
+
+        <div class="panel" id="cos-panel">
+          <div class="panel-h">
+            <span><strong>Chief of Staff</strong> · chat</span>
+            <span id="cos-status">Routes work · no images</span>
+          </div>
+          <div class="chat" id="cos-chat"></div>
+          <div class="composer-wrap">
+            <div class="suggest" id="cos-suggest">
+              <button type="button" onclick="pickSuggest('Review Riverside Lobby SD set')">Review Riverside Lobby SD set</button>
+              <button type="button" onclick="pickSuggest('Open Riverside kitchen in Design')">Open Riverside kitchen in Design</button>
+              <button type="button" onclick="pickSuggest(&quot;What's running?&quot;)">What's running?</button>
+            </div>
+            <div class="composer">
+              <input id="cos-input" placeholder="Ask CoS to route work…" onkeydown="if(event.key==='Enter')sendCoS()" />
+              <button class="btn small" onclick="sendCoS()">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ========== Design ========== -->
+      <div class="screen" id="screen-design">
+        <div class="row" style="flex-shrink:0;flex-wrap:wrap;gap:10px">
+          <div>
+            <strong id="design-title">Riverside Lobby</strong>
+            <div style="color:var(--muted);font-size:12px" id="design-sub">Architecture · SD · chat-primary + canvas</div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn ghost small" onclick="backToCoS()">← Back to CoS</button>
+          </div>
+        </div>
+
+        <div class="row" style="flex-shrink:0;flex-wrap:wrap;gap:10px;align-items:center;justify-content:flex-start">
+          <span style="font-size:12px;color:var(--muted)">Architecture</span>
+          <div class="steps" id="phase-rail" aria-label="Design phases"></div>
+        </div>
+
+        <div class="handoff-banner" id="handoff-banner" style="display:none">
+          <div class="hb-top">
+            <div>
+              <div class="hb-label">From Chief of Staff</div>
+              <p class="hb-goal" id="hb-goal">—</p>
+              <div class="hb-meta" id="hb-meta">pack · phase</div>
+            </div>
+            <button class="btn secondary small" id="hb-expand-btn" onclick="togglePacketExpand()">Expand packet</button>
+          </div>
+          <div class="handoff-expand" id="hb-expand"></div>
+        </div>
+
+        <div style="flex-shrink:0">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:6px">Canvas themes</div>
+          <div class="theme-bar" id="theme-bar">
+            <button class="theme-swatch active" data-theme="night" onclick="applyTheme('night')"><span class="swatch-dot" style="background:#1a1a1a"></span>Night</button>
+            <button class="theme-swatch" data-theme="trace" onclick="applyTheme('trace')"><span class="swatch-dot" style="background:#f4f1ea"></span>Trace</button>
+            <button class="theme-swatch" data-theme="redline" onclick="applyTheme('redline')"><span class="swatch-dot" style="background:#ff3b30"></span>Redline</button>
+            <button class="theme-swatch" data-theme="blueprint" onclick="applyTheme('blueprint')"><span class="swatch-dot" style="background:#0b3d91"></span>Blueprint</button>
+          </div>
+        </div>
+
+        <div class="split" id="split">
+          <div class="panel">
+            <div class="panel-h"><span><strong>Design</strong> · chat</span><span id="design-status">Ready</span></div>
+            <div class="chat" id="design-chat"></div>
+            <div class="composer-wrap">
+              <div class="composer">
+                <input id="design-input" placeholder="Ask Design…" onkeydown="if(event.key==='Enter')sendDesign()" />
+                <button class="btn small" onclick="sendDesign()">Send</button>
+              </div>
+            </div>
+          </div>
+          <div class="panel" id="canvas-panel">
+            <div class="panel-h"><span><strong>Canvas</strong></span><button class="btn ghost small" onclick="toggleCanvas()">Hide</button></div>
+            <div class="canvas-body">
+              <div class="frame" id="frame">SD set · Lobby plan<br/><span style="opacity:.7">awaiting review theme</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script src="cos-handoff.js"></script>
 </body>
 </html>
