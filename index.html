@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Archbot — UX prototype</title>
+<style>
+  :root {
+    --bg: #0c0d10;
+    --panel: #14161c;
+    --panel2: #1a1d26;
+    --border: #2a2f3a;
+    --text: #e8eaef;
+    --muted: #9aa3b2;
+    --accent: #7c9cff;
+    --accent2: #5b7cfa;
+    --good: #3dd68c;
+    --warn: #f5a524;
+    --danger: #ff6b6b;
+    --hero: linear-gradient(135deg, #1e2a4a 0%, #243056 50%, #1a2238 100%);
+    --radius: 14px;
+    --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); }
+  button { font: inherit; cursor: pointer; border: none; }
+  .app { display: grid; grid-template-columns: 220px 1fr; height: 100%; }
+  .sidebar {
+    background: var(--panel); border-right: 1px solid var(--border);
+    padding: 16px 12px; display: flex; flex-direction: column; gap: 8px;
+  }
+  .brand { font-weight: 700; letter-spacing: 0.04em; padding: 8px 10px 16px; font-size: 15px; }
+  .brand span { color: var(--accent); }
+  .nav-item {
+    text-align: left; background: transparent; color: var(--muted);
+    padding: 10px 12px; border-radius: 10px; display: flex; gap: 10px; align-items: center;
+  }
+  .nav-item.active { background: var(--panel2); color: var(--text); }
+  .nav-item .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .main { display: flex; flex-direction: column; min-width: 0; }
+  .topbar {
+    height: 52px; border-bottom: 1px solid var(--border); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 20px; background: rgba(12,13,16,0.85); backdrop-filter: blur(8px);
+  }
+  .crumb { color: var(--muted); font-size: 13px; }
+  .crumb strong { color: var(--text); font-weight: 600; }
+  .badge {
+    font-size: 11px; padding: 4px 8px; border-radius: 999px; background: #222733; color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .content { flex: 1; overflow: auto; padding: 20px; }
+  .screen { display: none; height: 100%; }
+  .screen.active { display: flex; flex-direction: column; gap: 16px; }
+
+  /* CoS home */
+  .pulse-title { font-size: 22px; font-weight: 650; margin: 0 0 4px; }
+  .pulse-sub { color: var(--muted); margin: 0 0 12px; font-size: 14px; }
+  .hero {
+    background: var(--hero); border: 1px solid #334066; border-radius: 18px;
+    padding: 20px; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  }
+  .hero h2 { margin: 0 0 6px; font-size: 18px; }
+  .hero p { margin: 0; color: #c5cee0; font-size: 14px; line-height: 1.45; }
+  .meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .chip {
+    font-size: 12px; padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,0.08);
+    color: #d7defl0; border: 1px solid rgba(255,255,255,0.1);
+  }
+  .chip.running { color: var(--warn); border-color: rgba(245,165,36,0.35); }
+  .chip.ready { color: var(--good); border-color: rgba(61,214,140,0.35); }
+  .btn {
+    background: var(--accent2); color: white; padding: 12px 18px; border-radius: 12px; font-weight: 600;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .btn.secondary { background: transparent; color: var(--text); border: 1px solid var(--border); }
+  .btn.ghost { background: #222733; color: var(--text); }
+  .btn.small { padding: 8px 12px; font-size: 13px; border-radius: 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .card h3 { margin: 0; font-size: 15px; }
+  .card p { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.4; }
+  .row { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+
+  /* Chat + canvas */
+  .split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 12px; flex: 1; min-height: 0; }
+  .split.canvas-collapsed { grid-template-columns: 1fr 0fr; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    display: flex; flex-direction: column; min-height: 420px; overflow: hidden;
+  }
+  .panel-h {
+    padding: 12px 14px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; color: var(--muted);
+  }
+  .panel-h strong { color: var(--text); }
+  .chat { flex: 1; overflow: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 92%; padding: 10px 12px; border-radius: 12px; font-size: 14px; line-height: 1.45; }
+  .msg.bot { background: var(--panel2); align-self: flex-start; border: 1px solid var(--border); }
+  .msg.user { background: #243056; align-self: flex-end; }
+  .msg .who { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .composer {
+    border-top: 1px solid var(--border); padding: 10px; display: flex; gap: 8px;
+  }
+  .composer input {
+    flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 10px 12px; outline: none;
+  }
+  .canvas-body {
+    flex: 1; display: grid; place-items: center; background:
+      radial-gradient(circle at 30% 20%, #243056 0%, transparent 45%),
+      linear-gradient(180deg, #12151c, #0e1016);
+    position: relative; padding: 16px;
+  }
+  .frame {
+    width: min(100%, 340px); aspect-ratio: 4/3; border-radius: 12px; border: 1px solid var(--border);
+    background:
+      linear-gradient(160deg, #3a4660, #222938 40%, #1a1f2b),
+      repeating-linear-gradient(90deg, transparent, transparent 18px, rgba(255,255,255,0.03) 19px);
+    display: grid; place-items: center; color: #b7c0d4; font-size: 13px; text-align: center; padding: 16px;
+  }
+  .toast {
+    position: fixed; right: 20px; bottom: 20px; width: min(360px, calc(100vw - 40px));
+    background: #182033; border: 1px solid #3a4d7a; border-radius: 14px; padding: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45); display: none; z-index: 50;
+  }
+  .toast.show { display: block; animation: up .25s ease; }
+  @keyframes up { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .toast h4 { margin: 0 0 6px; font-size: 14px; }
+  .toast p { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+  .hint {
+    background: #151922; border: 1px dashed #333948; color: var(--muted); border-radius: 12px;
+    padding: 10px 12px; font-size: 12px; line-height: 1.4;
+  }
+  .steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+  .step-pill {
+    font-size: 11px; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--muted);
+  }
+  .step-pill.on { color: var(--text); border-color: var(--accent); background: rgba(124,156,255,0.12); }
+  @media (max-width: 900px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { flex-direction: row; overflow-x: auto; }
+    .split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">ARCH<span>BOT</span></div>
+    <button class="nav-item active" id="nav-cos" onclick="goHome()"> <span class="dot"></span> Chief of Staff</button>
+    <button class="nav-item" id="nav-design" onclick="openDesign('lobby', false)"> <span class="dot" style="background:#9aa3b2"></span> Design</button>
+    <div style="flex:1"></div>
+    <div class="hint">Prototype only — click through the flow. Nothing is saved.</div>
+  </aside>
+
+  <section class="main">
+    <div class="topbar">
+      <div class="crumb" id="crumb"><strong>Chief of Staff</strong> · studio pulse</div>
+      <span class="badge" id="clock">Prototype</span>
+    </div>
+    <div class="content">
+      <div class="steps" id="steps">
+        <span class="step-pill on" data-s="1">1. CoS home</span>
+        <span class="step-pill" data-s="2">2. Continue → Design</span>
+        <span class="step-pill" data-s="3">3. Start background job</span>
+        <span class="step-pill" data-s="4">4. Switch project</span>
+        <span class="step-pill" data-s="5">5. Get pulled in</span>
+      </div>
+
+      <!-- HOME -->
+      <div class="screen active" id="screen-home">
+        <div>
+          <h1 class="pulse-title">Good afternoon, Miles</h1>
+          <p class="pulse-sub">3 active projects · 1 needs you · last worked: Lobby refresh</p>
+        </div>
+
+        <div class="hero">
+          <div>
+            <h2>Continue · Lobby refresh</h2>
+            <p>Design left 2 Japandi options waiting. Project Brain: no leather, natural materials, $45k FF&E cap.</p>
+            <div class="meta">
+              <span class="chip">Stage: options</span>
+              <span class="chip" id="lobby-run-chip">Idle</span>
+            </div>
+          </div>
+          <button class="btn" onclick="openDesign('lobby', true)">Continue</button>
+        </div>
+
+        <div>
+          <div class="row" style="margin-bottom:8px">
+            <strong style="font-size:14px">Other projects</strong>
+            <span style="color:var(--muted);font-size:12px">same glance, different stages</span>
+          </div>
+          <div class="grid">
+            <div class="card">
+              <div class="row"><h3>Riverside kitchen</h3><span class="chip">brainstorm</span></div>
+              <p>No canvas yet — early concept chat. Good place to work while Lobby runs a review.</p>
+              <button class="btn secondary small" onclick="openDesign('riverside', true)">Open</button>
+            </div>
+            <div class="card">
+              <div class="row"><h3>Clinic waiting room</h3><span class="chip">needs decision</span></div>
+              <p>Budget over by ~8%. CoS will escalate when you have a minute.</p>
+              <button class="btn secondary small" onclick="alert('Prototype: decision queue would open here.')">Review decision</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DESIGN -->
+      <div class="screen" id="screen-design">
+        <div class="row">
+          <div>
+            <strong id="design-title">Lobby refresh</strong>
+            <div style="color:var(--muted);font-size:12px" id="design-sub">Chat-primary · canvas expands with visual work</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost small" onclick="goHome()">← CoS home</button>
+            <button class="btn secondary small" id="btn-bg" onclick="startBackgroundJob()">Start drawing review (bg)</button>
+          </div>
+        </div>
+
+        <div class="split" id="split">
+          <div class="panel">
+            <div class="panel-h"><span><strong>Design</strong> · chat</span><span id="design-status">Ready</span></div>
+            <div class="chat" id="chat"></div>
+            <div class="composer">
+              <input id="input" placeholder="Ask Design…" onkeydown="if(event.key==='Enter')send()" />
+              <button class="btn small" onclick="send()">Send</button>
+            </div>
+          </div>
+          <div class="panel" id="canvas-panel">
+            <div class="panel-h"><span><strong>Canvas</strong></span><button class="btn ghost small" onclick="toggleCanvas()">Hide</button></div>
+            <div class="canvas-body">
+              <div class="frame" id="frame">Room photo / latest option<br/><span style="opacity:.7">Japandi · option B selected</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="toast" id="toast">
+  <h4>Lobby refresh · review ready</h4>
+  <p>Drawing review finished with 3 findings while you were on Riverside. CoS is pulling you back in.</p>
+  <div class="row">
+    <button class="btn small" onclick="openDesign('lobby', true); hideToast(); setStep(5);">Open Lobby</button>
+    <button class="btn secondary small" onclick="hideToast()">Later</button>
+  </div>
+</div>
+
+<script>
+  const state = {
+    project: 'lobby',
+    lobbyRunning: false,
+    toastTimer: null,
+  };
+
+  const projects = {
+    lobby: {
+      title: 'Lobby refresh',
+      sub: 'Continue from last session · 2 Japandi options',
+      canvas: true,
+      seed: [
+        { who: 'Design', role: 'bot', text: 'Welcome back. Option B is on the canvas. Want variations, a constraint check, or shall I start a drawing review in the background?' },
+      ],
+    },
+    riverside: {
+      title: 'Riverside kitchen',
+      sub: 'Early brainstorm · no canvas yet',
+      canvas: false,
+      seed: [
+        { who: 'Design', role: 'bot', text: 'Riverside kitchen is still in brainstorm. Talk materials, layout, or client goals — Lobby can keep running in the background.' },
+      ],
+    },
+  };
+
+  function setStep(n) {
+    document.querySelectorAll('.step-pill').forEach(el => {
+      el.classList.toggle('on', Number(el.dataset.s) === n || Number(el.dataset.s) < n);
+    });
+  }
+
+  function goHome() {
+    document.getElementById('screen-home').classList.add('active');
+    document.getElementById('screen-design').classList.remove('active');
+    document.getElementById('nav-cos').classList.add('active');
+    document.getElementById('nav-design').classList.remove('active');
+    document.getElementById('crumb').innerHTML = '<strong>Chief of Staff</strong> · studio pulse';
+    setStep(1);
+    updateLobbyChip();
+  }
+
+  function openDesign(key, fromContinue) {
+    state.project = key;
+    const p = projects[key];
+    document.getElementById('screen-home').classList.remove('active');
+    document.getElementById('screen-design').classList.add('active');
+    document.getElementById('nav-cos').classList.remove('active');
+    document.getElementById('nav-design').classList.add('active');
+    document.getElementById('crumb').innerHTML = `<strong>Design</strong> · ${p.title}`;
+    document.getElementById('design-title').textContent = p.title;
+    document.getElementById('design-sub').textContent = p.sub;
+    document.getElementById('btn-bg').style.display = key === 'lobby' ? '' : 'none';
+
+    const split = document.getElementById('split');
+    split.classList.toggle('canvas-collapsed', !p.canvas);
+    document.getElementById('canvas-panel').style.display = p.canvas ? '' : 'none';
+
+    const chat = document.getElementById('chat');
+    chat.innerHTML = '';
+    p.seed.forEach(m => addMsg(m.who, m.role, m.text));
+
+    if (fromContinue && key === 'lobby') {
+      addMsg('System', 'bot', 'Handoff from CoS: project=lobby · continue_from=option B · constraints=no leather, natural materials, $45k cap · open_runs=' + (state.lobbyRunning ? 'drawing_review' : 'none'));
+      setStep(2);
+    } else if (key === 'riverside') {
+      setStep(4);
+      if (state.lobbyRunning) {
+        addMsg('Design', 'bot', 'Lobby drawing review is still running. You’re free to brainstorm here — I’ll ping CoS when it’s done.');
+      }
+    }
+    updateLobbyChip();
+  }
+
+  function addMsg(who, role, text) {
+    const chat = document.getElementById('chat');
+    const div = document.createElement('div');
+    div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+    div.innerHTML = `<div class="who">${who}</div>${text}`;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  function send() {
+    const input = document.getElementById('input');
+    const text = input.value.trim();
+    if (!text) return;
+    addMsg('You', 'user', text);
+    input.value = '';
+    setTimeout(() => {
+      if (state.project === 'riverside') {
+        addMsg('Design', 'bot', 'Noted. I’ll keep this as kitchen direction notes. (Prototype reply — no model behind this.)');
+      } else {
+        addMsg('Design', 'bot', 'Got it. In the real app this would call edit/generate with Project Brain injected. (Prototype reply.)');
+      }
+    }, 450);
+  }
+
+  function toggleCanvas() {
+    const split = document.getElementById('split');
+    const panel = document.getElementById('canvas-panel');
+    const collapsed = split.classList.toggle('canvas-collapsed');
+    panel.style.display = collapsed ? 'none' : '';
+  }
+
+  function startBackgroundJob() {
+    if (state.project !== 'lobby') return;
+    if (state.lobbyRunning) {
+      addMsg('Design', 'bot', 'Review already running in the background.');
+      return;
+    }
+    state.lobbyRunning = true;
+    updateLobbyChip();
+    setStep(3);
+    addMsg('Design', 'bot', 'Started drawing review in the background. You can leave Lobby — the job keeps running.');
+    document.getElementById('design-status').textContent = 'Review running…';
+
+    clearTimeout(state.toastTimer);
+    state.toastTimer = setTimeout(() => {
+      state.lobbyRunning = false;
+      updateLobbyChip();
+      document.getElementById('design-status').textContent = 'Review ready';
+      document.getElementById('toast').classList.add('show');
+      setStep(5);
+    }, 6000);
+  }
+
+  function hideToast() {
+    document.getElementById('toast').classList.remove('show');
+  }
+
+  function updateLobbyChip() {
+    const chip = document.getElementById('lobby-run-chip');
+    if (!chip) return;
+    if (state.lobbyRunning) {
+      chip.textContent = 'Running · drawing review';
+      chip.className = 'chip running';
+    } else if (document.getElementById('design-status')?.textContent === 'Review ready') {
+      chip.textContent = 'Ready · review';
+      chip.className = 'chip ready';
+    } else {
+      chip.textContent = 'Idle';
+      chip.className = 'chip';
+    }
+  }
+</script>
+</body>
+</html>
